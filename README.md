@@ -30,5 +30,45 @@ Crearemos una cuenta de servicio para representar a nuestro usuario en el siguie
 A continuación, se muestra un ejemplo de uso de RBAC en Kubernetes. Primero, crearemos una cuenta de servicio y luego le asignaremos un rol. Este rol permitirá que la cuenta enumere, cree y cambie pods, pero solo en un espacio de nombres en particular. La cuenta no tendrá permiso para hacer otras cosas, trabajar con diferentes tipos de recursos ni acceder a otros espacios de nombres.
 
 El control de acceso basado en roles es una característica de Kubernetes que puedes elegir usar, pero generalmente ya está activada en la mayoría de las versiones más comunes. Para ver si está disponible, puedes ejecutar un comando llamado 
-´kubectl api-versions´
-Si ves rbac.authorization.k8s.io en la lista que aparece, entonces puedes comenzar a usar RBAC en tu configuración.
+`kubectl api-versions`.Si ves `rbac.authorization.k8s.io` en la lista que aparece, entonces puedes comenzar a usar RBAC en tu configuración.
+
+`kubectl api-versions | grep rbac`
+
+Para habilitar manualmente la compatibilidad con RBAC, debe iniciar el servidor de API de Kubernetes con el indicador --authorization-mode=RBAC establecido:
+
+`kube-apiserver --authorization-mode=RBAC`
+
+### Crear una cuenta de servicio
+Debe crear una cuenta de servicio para usarla en los próximos pasos. Vinculará el rol que cree a esta cuenta de servicio:
+
+`$ kubectl create serviceaccount demo-user
+serviceaccount/demo-user created`
+
+A continuación, ejecute el siguiente comando para crear un token de autorización para su cuenta de servicio:
+
+`$ kubectl create serviceaccount demo-user
+serviceaccount/demo-user created`
+
+A continuación, ejecute el siguiente comando para crear un token de autorización para su cuenta de servicio:
+
+`$ TOKEN=$(kubectl create token demo-user)`
+
+
+El valor del token ahora se guardará en la variable de entorno $TOKEN en su terminal.
+
+### Configurar kubectl con su cuenta de servicio
+Ahora agregue un nuevo contexto de kubectl que le permita autenticarse como su cuenta de servicio. Primero, agregue su cuenta de servicio como credencial en su archivo Kubeconfig:
+
+`$ kubectl config set-credentials demo-user --token=$TOKEN
+User "demo-user" set.`
+
+
+
+
+
+
+
+
+
+
+
