@@ -41,8 +41,8 @@ Para habilitar manualmente la compatibilidad con RBAC, debe iniciar el servidor 
 ### Crear una cuenta de servicio
 Debe crear una cuenta de servicio para usarla en los próximos pasos. Vinculará el rol que cree a esta cuenta de servicio:
 
-`$ kubectl create serviceaccount demo-user
-serviceaccount/demo-user created`
+```$ kubectl create serviceaccount demo-user`
+serviceaccount/demo-user created```
 
 A continuación, ejecute el siguiente comando para crear un token de autorización para su cuenta de servicio:
 
