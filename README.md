@@ -68,6 +68,169 @@ $ kubectl config set-credentials demo-user --token=$TOKEN
 User "demo-user" set.
 ```
 
+A continuación, agrega tu nuevo contexto. Lo llamaremos `demo-user-context`. Haz referencia a tu nueva credencial `demo-user` y a tu clúster de Kubernetes actual. (Estamos usando el clúster `default`, pero debes cambiar este valor si estás conectado a un clúster con un nombre diferente).
+
+```
+$ kubectl config set-context demo-user-context --cluster=default --user=demo-user
+Context "demo-user-context" created.
+```
+
+Antes de cambiar a su nuevo contexto, primero verifique el nombre de su contexto actual para que pueda volver fácilmente a su cuenta administrativa en la siguiente sección:
+
+```
+$ kubectl config current-context
+default
+```
+
+Ahora, cambia a tu nuevo contexto que se autentica como tu cuenta de servicio:
+
+```
+$ kubectl config use-context demo-user-context
+Switched to context "demo-user-context".
+```
+
+Intenta enumerar los Pods en el espacio de nombres:
+
+```
+$ kubectl get pods
+Error from server (Forbidden): pods is forbidden: User "system:serviceaccount:default:demo-user" cannot list resource "pods" in API group "" in the namespace "default"
+```
+
+Se devuelve un error Forbidden porque a su cuenta de servicio no se le han asignado roles RBAC que incluyan el permiso para obtener pods.
+
+Antes de continuar, vuelva a su contexto kubectl original para restaurar sus privilegios de administrador. Esto le permitirá crear sus objetos Role y RoleBinding en la siguiente sección.
+```
+$ kubectl config use-context default
+Switched to context "default"
+```
+
+### Creación de un rol
+Se requiere un objeto Role (o ClusterRole) para cada uno de los roles que desea usar con Kubernetes. En este tutorial, usamos un rol porque trabajamos con pods, que son recursos con espacios de nombres.
+
+Los manifiestos de roles requieren un campo de reglas que enumera los grupos de API, los tipos de recursos y los verbos que pueden usar los titulares del rol.
+
+A continuación, se incluye un ejemplo que permite las acciones de obtención, lista, creación y actualización en pods:
+
+```
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: demo-role
+  namespace: default
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+      - create
+      - update
+```
+
+El campo apiGroups se establece en una matriz vacía porque los pods existen en el grupo de nivel superior. Los campos de recursos y verbos enumeran las interacciones permitidas dentro de los grupos de API que ha definido. Debido a que los roles tienen espacios de nombres, los titulares del rol solo pueden acceder a los recursos permitidos dentro del espacio de nombres al que pertenece el rol.
+
+Guarde el manifiesto del rol en role.yaml y luego use kubectl para agregarlo a su clúster:
+
+```
+$ kubectl apply -f role.yaml
+role.rbac.authorization.k8s.io/demo-role created
+```
+
+Cree un RoleBinding
+El rol se ha creado, pero aún no está asignado a su cuenta de servicio. Se requiere un RoleBinding para realizar esta conexión.
+
+Los objetos RoleBinding requieren los campos roleRef y subject:
+
+roleRef: identifica el objeto de rol que se está asignando.
+subject: una lista de uno o más usuarios o cuentas de servicio a los que se les asignará el rol.
+Este es un RoleBinding que asignará el rol recién creado a su cuenta de servicio:
+
+```
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: demo-role-binding
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: demo-role
+subjects:
+  - namespace: default
+    kind: ServiceAccount
+    name: demo-user
+```
+
+El manifiesto indica que el rol demo-role (dentro del espacio de nombres default) debe asignarse a la cuenta de servicio denominada demo-user. (Si estuviera asignando el rol a un usuario humano, establecería kind: User en lugar de kind: ServiceAccount).
+
+Guarde el manifiesto RoleBinding como rolebinding.yaml y, luego, agréguelo a su clúster para otorgarle el rol a su usuario:
+
+```
+$ kubectl apply -f rolebinding.yaml
+rolebinding.rbac.authorization.k8s.io/demo-role-binding created
+```
+
+Verifique que su cuenta de servicio esté funcionando
+Ahora puede probar que su nueva regla RBAC esté funcionando correctamente. Su cuenta de servicio debería poder interactuar con los pods en el espacio de nombres default.
+
+Vuelva al contexto kubectl que se autentica como el usuario de la cuenta de servicio:
+
+```
+$ kubectl config use-context demo-user-context
+Switched to context "demo-user-context".
+```
+
+Verifique que el comando get pods ahora se ejecute correctamente:
+
+```
+$ kubectl get pods
+No resources found in default namespace.
+```
+
+También puede intentar crear un pod como su cuenta de servicio:
+
+```
+$ kubectl run nginx --image=nginx:latest
+pod/nginx created
+```
+
+El pod se creó correctamente:
+
+```
+$ kubectl get pods
+NAME    READY   STATUS    RESTARTS   AGE
+nginx   1/1     Running   0          31s
+```
+
+Sin embargo, el usuario de la cuenta de servicio no puede eliminar pods porque el rol que ha asignado no incluye el verbo de acción de eliminación requerido:
+
+```
+$ kubectl delete pod nginx
+Error from server (Forbidden): pods "nginx" is forbidden: User "system:serviceaccount:default:demo-user" cannot delete resource "pods" in API group "" in the namespace "default"
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
