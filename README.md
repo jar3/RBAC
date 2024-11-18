@@ -71,7 +71,7 @@ User "demo-user" set.
 A continuación, agrega tu nuevo contexto. Lo llamaremos `demo-user-context`. Haz referencia a tu nueva credencial `demo-user` y a tu clúster de Kubernetes actual. (Estamos usando el clúster `default`, pero debes cambiar este valor si estás conectado a un clúster con un nombre diferente).
 
 ```
-$ kubectl config set-context demo-user-context --cluster=default --user=demo-user
+$ kubectl config set-context demo-user-context --cluster=minikube --user=demo-user
 Context "demo-user-context" created.
 ```
 
