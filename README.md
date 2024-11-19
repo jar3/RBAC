@@ -211,6 +211,9 @@ $ kubectl delete pod nginx
 Error from server (Forbidden): pods "nginx" is forbidden: User "system:serviceaccount:default:demo-user" cannot delete resource "pods" in API group "" in the namespace "default"
 ```
 
+### Usar codespace de github
+En el repositorio > Code > codespaces
+` minikube start
 
 
 
